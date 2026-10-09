@@ -1,0 +1,39 @@
+Pillow
+# A user-friendly library for opening, manipulating, and saving many different image file formats.
+
+tqdm
+# A fast, extensible progress bar library for loops and CLI scripts.
+
+ftfy
+# A utility that automatically fixes broken Unicode and garbled text encoding errors.
+
+regex
+# An advanced regular expression module that replaces Python's built-in re with full Unicode support.
+
+huggingface_hub
+# A client library to interact with the Hugging Face platform for downloading and sharing AI models.
+
+safetensors
+# A fast, secure file format for saving and loading machine learning tensors without execution risks.
+
+timm
+# A deep learning library containing a massive collection of state-of-the-art computer vision models.
+
+insightface
+# An open-source 2D and 3D deep face analysis toolbox for detection, recognition, and alignment.
+
+onnxruntime
+# A high-performance execution engine for running pre-trained machine learning models cross-platform.
+
+opencv-python-headless
+# A server-optimized version of OpenCV for image processing without graphical user interface (GUI) dependencies.
+
+numpy
+# The foundational package for scientific computing with multi-dimensional arrays and mathematical operations in Python.
+
+# The web interface related requirements are:
+flask
+flask-session
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
