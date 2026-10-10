@@ -16,7 +16,7 @@ Commercial photo apps (Google Photos, Apple Photos) offer this kind of search, b
 
 Note: Searching for "beach" does the same full-library sweep as searching for anything else — there's no index structure that lets it skip obviously-irrelevant photos. It's a linear scan: cost grows directly with library size. At 22k photos it's tolerable; at 200k it would be painful. The natural next step is to implement a vector database.
 
-**[Jump to Setup ↓](#setup)**
+**[Jump to Setup ↓](#-setup)**
 
 ## The Application Architecture visualized with mermaid
 
@@ -107,14 +107,14 @@ To avoid this, **single-word queries skip the LLM**. They're checked directly ag
 ### 1. Clone and build
 
 ```bash
-git clone <this-repo>
+git clone https://github.com/bloveobs/pic-search.git
 cd pic-search
 podman build -t pic-search .
 ```
 
 ### 2. Configure your settings
 
-Before you build or index anything, create your own copies of the **two config files** and edit them for your machine:
+Before you index anything, create your own copies of the **two config files** and edit them for your machine:
 
 ```bash
 cp config_example.py config.py
@@ -147,6 +147,7 @@ cp config_example.sh config.sh
 `SECRET_KEY`: generate one with this command and paste the output in config.py
 `python3 -c "import secrets; print(secrets.token_hex(32))"` 
 
+### 3. Index your photos
 
 Index your photo library for concept search:
 
@@ -173,6 +174,8 @@ Run a face search directly:
 ./search_face.sh "Jill"
 ```
 
+### 4. Start Ollama
+
 Run Ollama locally for natural-language query parsing:
 
 ```bash
@@ -182,7 +185,21 @@ podman exec -it ollama ollama pull llama3.2:3b
 
 The `127.0.0.1:` prefix matters: Ollama's API has no authentication, and a bare `-p 11434:11434` publishes it to every device on your network.
 
-Start the web UI (from the same WSL shell as the podman commands above, from the `pic-search` base directory):
+### 5. Install the web UI's Python packages
+
+`app.py` runs on the host, not in a container, so it needs its own packages (Flask, Google OAuth and so on). Install them once into a virtual environment, from the `pic-search` base directory:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+Put your Google OAuth client file in the same directory, named `client_secret.json` (see Prerequisites).
+
+### 6. Start the web UI
+
+From the same WSL shell as the podman commands above, in the `pic-search` base directory, with the virtual environment active (`source .venv/bin/activate` in a new shell):
 
 ```bash
 python3 app.py
@@ -266,37 +283,39 @@ In Google Cloud Console, add `https://yourname.duckdns.org/callback` as an autho
 ## Metrics & Performance
 Measured on a reference install:
 
-Hardware
+### Hardware
 
-Lenovo X1 Carbon — Intel Core Ultra 7 258V, 32GB RAM, integrated GPU, 1.86TB SSD
-Google Fiber 1Gbps (for the public web UI)
-All inference runs CPU-only; no discrete GPU
+- Lenovo X1 Carbon — Intel Core Ultra 7 258V, 32GB RAM, integrated GPU, 1.86TB SSD
+- Google Fiber 1Gbps (for the public web UI)
+- All inference runs CPU-only; no discrete GPU
 
-Library
+### Library
 
-Metric	Value
-Photos in library	22,819 (76GB)
-CLIP embeddings indexed	22,804 (15 skipped — unreadable/corrupt)
-Embedding dimensions	512
-Photos with a recognized face	5,107 (22%)
-index.json size	248MB
-faces.json size	737KB
+| Metric | Value |
+|---|---|
+| Photos in library | 22,819 (76GB) |
+| CLIP embeddings indexed | 22,804 (15 skipped — unreadable/corrupt) |
+| Embedding dimensions | 512 |
+| Photos with a recognized face | 5,107 (22%) |
+| `index.json` size | 248MB |
+| `faces.json` size | 737KB |
 
-Search latency
+### Search latency
 
-Search type	Time
-Scene search (CLIP)	10.4s
-Face search (insightface)	0.76s
+| Search type | Time |
+|---|---|
+| Scene search (CLIP) | 10.4s |
+| Face search (insightface) | 0.76s |
 
-The 14x gap is startup cost, not inference cost. Face search is a pure JSON lookup against faces.json — no model is loaded at query time, since all face matching happens during indexing. Scene search spins up a fresh container and loads the CLIP model into memory on every query; the actual similarity comparison across 22,804 embeddings is a small fraction of those 10 seconds. A long-running service instead of one container per query would close most of that gap.
+The 14x gap is startup cost, not inference cost. Face search is a pure JSON lookup against `faces.json` — no model is loaded at query time, since all face matching happens during indexing. Scene search spins up a fresh container and loads the CLIP model into memory on every query; the actual similarity comparison across 22,804 embeddings is a small fraction of those 10 seconds. A long-running service instead of one container per query would close most of that gap.
 
-Unexpected result: it works on dogs. buffalo_l is trained on human faces, but reference folders containing dogs return reasonable matches — presumably matching general visual features rather than true facial landmarks. Less reliable than for people, but usable.
+Unexpected result: it works on dogs. `buffalo_l` is trained on human faces, but reference folders containing dogs return reasonable matches — presumably matching general visual features rather than true facial landmarks. Less reliable than for people, but usable.
 
-Known limitations at this scale
+### Known limitations at this scale
 
-Scene search is a linear scan: every query loads the full 248MB index.json and scores all 22,804 embeddings. Fine here, but a vector database (FAISS, Qdrant, Chroma) would be the natural next step past ~50k photos.
-Duplicate photos are not detected. The same image stored in multiple folders scores identically and consumes multiple result slots — dedup by content hash would improve effective result variety.
-ViT-B-32 is the smallest CLIP variant. Scene matches top out around 0.30 similarity, which is weak; ViT-L-14 would improve relevance at the cost of slower indexing.
+- Scene search is a linear scan: every query loads the full 248MB `index.json` and scores all 22,804 embeddings. Fine here, but a vector database (FAISS, Qdrant, Chroma) would be the natural next step past ~50k photos.
+- Duplicate photos are not detected. The same image stored in multiple folders scores identically and consumes multiple result slots — dedup by content hash would improve effective result variety.
+- ViT-B-32 is the smallest CLIP variant. Scene matches top out around 0.30 similarity, which is weak; ViT-L-14 would improve relevance at the cost of slower indexing.
 
 ## Caveats
 
@@ -317,6 +336,10 @@ ViT-B-32 is the smallest CLIP variant. Scene matches top out around 0.30 similar
 ## Privacy
 
 Everything — photo indexing, face recognition, query parsing, and the web UI itself — runs locally in containers/WSL2 on your own machine. No photos, reference faces, or search queries are sent to any external service, aside from the OAuth login handshake with Google itself.
+
+## Contributing
+
+Bug reports, ideas and pull requests are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md). For security problems, follow [SECURITY.md](SECURITY.md) instead of opening a public issue.
 
 ## Credits
 

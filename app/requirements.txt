@@ -31,9 +31,5 @@ opencv-python-headless
 numpy
 # The foundational package for scientific computing with multi-dimensional arrays and mathematical operations in Python.
 
-# The web interface related requirements are:
-flask
-flask-session
-google-auth
-google-auth-oauthlib
-google-auth-httplib2
+# The web UI's requirements (Flask, Google OAuth) are in ../requirements.txt —
+# they are installed on the host, not in this container.

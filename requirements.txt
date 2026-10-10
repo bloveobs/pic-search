@@ -1,0 +1,17 @@
+# Web UI requirements — install these on the host (the WSL shell you run app.py from).
+# The container's own requirements are in app/requirements.txt.
+
+flask
+# The web framework behind app.py.
+
+flask-session
+# Server-side sessions, stored as files on disk instead of in the browser cookie.
+
+cachelib
+# The file storage backend flask-session uses for SESSION_TYPE="filesystem".
+
+google-auth-oauthlib
+# The Google OAuth login flow (also installs google-auth).
+
+requests
+# HTTP client query_parser.py uses to call the local Ollama API.
