@@ -102,7 +102,8 @@ To avoid this, **single-word queries skip the LLM**. They're checked directly ag
 ## 🚀 Setup
 
 > **Start here** to install and run pic-search
-> Works from PowerShell or a WSL shell on Windows, or any Linux/macOS terminal
+> Run every command in this Setup section from the same WSL2 shell on Windows — not from PowerShell (see [Prerequisites](#prerequisites) for why).
+> Developed and tested only on WSL2 (RHEL 10); native Linux and macOS are untested.
 
 ### 1. Clone and build
 
