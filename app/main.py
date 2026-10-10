@@ -1,10 +1,17 @@
 import argparse
 import json
 import os
-import os
-os.environ["HF_HUB_OFFLINE"] = "1"
-
 from pathlib import Path
+
+# Stay offline once the CLIP weights are in the cache volume, so no search or
+# index run needs the network. On a fresh install the cache is empty, so leave
+# the Hugging Face hub online for the one-time download (about 600 MB).
+# Must be set before open_clip is imported.
+HF_MODEL_CACHE = Path.home() / ".cache/huggingface/hub/models--laion--CLIP-ViT-B-32-laion2B-s34B-b79K/snapshots"
+if any(HF_MODEL_CACHE.glob("*/open_clip_*")):
+    os.environ["HF_HUB_OFFLINE"] = "1"
+else:
+    print("CLIP model not cached yet - downloading it once (about 600 MB)...")
 
 import torch
 from PIL import Image

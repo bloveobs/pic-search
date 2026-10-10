@@ -157,6 +157,8 @@ chmod +x search.sh index_faces.sh index_photos.sh search_face.sh
 ./index_photos.sh
 ```
 
+The first run downloads the CLIP model (about 600 MB) into a Podman volume, so it needs an internet connection. Every run after that works offline.
+
 Index your photo library for face recognition (uses `references_faces/`). Note: `index_faces()` rescans your **entire** photo library against the **current full reference set** every run (not just new photos) — this is required so that adding a new person later correctly re-matches them against your existing library, not just newly-added photos:
 
 ```bash
